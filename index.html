@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lưu trữ bài học YouTube</title>
+    <title>Quản lý bài học YouTube</title>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -22,7 +22,7 @@
             box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
         }
         h1 {
-            color: #ffffff;
+            color: white;
             font-size: 26px;
         }
         .input-group {
@@ -32,108 +32,74 @@
             flex-wrap: wrap;
             margin-bottom: 20px;
         }
-        input, select {
-            width: 20%;
-            padding: 12px;
-            border: 2px solid #888;
-            border-radius: 8px;
+        input, select, button {
+            padding: 10px;
             font-size: 14px;
-            background: #fff;
-            color: black;
+            border-radius: 8px;
+        }
+        select, input {
+            width: 200px;
         }
         button {
-            padding: 12px 18px;
-            background: linear-gradient(to right, #c6ffdd, #fbd786, #f7797d);
-            color: rgb(66, 55, 55);
+            background-color: #fbd786;
             border: none;
-            border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
         }
         button:hover {
-            background: linear-gradient(to right, #fc5c7d, #6a82fb);
-            color: blue;
+            background-color: #f7797d;
+            color: white;
         }
         .video-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
             gap: 20px;
             justify-content: center;
             margin-top: 20px;
         }
         .video-item {
+            width: 300px;
             background: linear-gradient(to right, #fffbd5, #b20a2c);
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
             text-align: center;
-            position: relative;
         }
         iframe {
-            width: calc(100% + 10px);
-            margin-left: -5px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        .video-title-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
-            background: linear-gradient(to right, #870000, #190a05);
-            color: white;
-            padding: 10px 0;
-            font-size: 14px;
-            border-radius: 8px 8px 0 0;
+            border-radius: 8px;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database.js"></script>
-</head>
-<body>
-    <div class="container">
-        <h1>Lưu trữ bài học YouTube</h1>
-        <div class="input-group">
-            <input type="text" id="videoTitle" placeholder="Nhập tiêu đề..." autocomplete="off">
-            <input type="text" id="videoUrl" placeholder="Nhập link YouTube..." autocomplete="off">
-            <select id="videoCategory"></select>
-            <button onclick="addVideo()">Thêm</button>
-        </div>
-        <div>
-            <input type="text" id="newCategory" placeholder="Nhập tên danh mục..." autocomplete="off">
-            <button onclick="addCategory()">Thêm danh mục</button>
-        </div>
-        <div class="video-list" id="videoList"></div>
-        <p id="noVideosMessage" style="display:none; color: lightgray;">Thư mục chưa tồn tại video nào</p>
-    </div>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
 
-    <script>
-        // Firebase configuration
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-auth-domain",
-            databaseURL: "your-database-url",
-            projectId: "your-project-id",
-            storageBucket: "your-storage-bucket",
-            messagingSenderId: "your-sender-id",
-            appId: "your-app-id",
+            apiKey: "AIzaSyC5NkR05EAhs6yjwKj1V351eocelZO-7Kw",
+            authDomain: "luutrubaihoc-b43c1.firebaseapp.com",
+            projectId: "luutrubaihoc-b43c1",
+            storageBucket: "luutrubaihoc-b43c1.firebasestorage.app",
+            messagingSenderId: "171591571073",
+            appId: "1:171591571073:web:c0771e1971def6905a5f80",
+            measurementId: "G-C84RG4NJLX"
         };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
         let categories = [];
 
-        // Update category list from Firebase
+        // Cập nhật danh mục từ Firebase
         function updateCategoryList() {
-            db.ref('categories').on('value', (snapshot) => {
-                const data = snapshot.val();
-                categories = data || ["HTML", "CSS", "JavaScript"];
+            const categoryRef = ref(db, "categories");
+            onValue(categoryRef, (snapshot) => {
+                categories = snapshot.val() || ["HTML", "CSS", "JavaScript"];
                 const categorySelect = document.getElementById("videoCategory");
                 categorySelect.innerHTML = "";
-                categories.forEach(category => {
-                    let option = document.createElement("option");
+                categories.forEach((category) => {
+                    const option = document.createElement("option");
                     option.value = category;
                     option.textContent = category;
                     categorySelect.appendChild(option);
@@ -142,86 +108,89 @@
             });
         }
 
-        // Add category to Firebase
+        // Thêm danh mục
         function addCategory() {
             const newCategoryInput = document.getElementById("newCategory");
             const newCategory = newCategoryInput.value.trim();
             if (newCategory && !categories.includes(newCategory)) {
                 categories.push(newCategory);
-                db.ref('categories').set(categories);
+                const categoryRef = ref(db, "categories");
+                set(categoryRef, categories);
                 newCategoryInput.value = "";
             }
         }
 
-        // Add video to Firebase
+        // Thêm video
         function addVideo() {
-            const titleInput = document.getElementById("videoTitle");
-            const urlInput = document.getElementById("videoUrl");
-            const categoryInput = document.getElementById("videoCategory");
-            const title = titleInput.value.trim();
-            const url = urlInput.value.trim();
-            const category = categoryInput.value;
+            const title = document.getElementById("videoTitle").value.trim();
+            const url = document.getElementById("videoUrl").value.trim();
+            const category = document.getElementById("videoCategory").value;
 
             const videoID = extractYouTubeID(url);
-            if (!videoID) return;
+            if (!videoID) return alert("Link YouTube không hợp lệ!");
 
-            const newVideo = {
+            const video = {
                 title,
                 url: `https://www.youtube.com/embed/${videoID}`,
                 category,
             };
 
-            const videoRef = db.ref('videos').push();
-            videoRef.set(newVideo);
-
-            titleInput.value = "";
-            urlInput.value = "";
+            const videoRef = ref(db, "videos");
+            push(videoRef, video);
+            document.getElementById("videoTitle").value = "";
+            document.getElementById("videoUrl").value = "";
         }
 
-        // Update video list from Firebase
+        // Hiển thị danh sách video
         function updateVideoList() {
             const category = document.getElementById("videoCategory").value;
             const videoList = document.getElementById("videoList");
-            const noVideosMessage = document.getElementById("noVideosMessage");
+            const videoRef = ref(db, "videos");
 
-            db.ref('videos').on('value', (snapshot) => {
+            onValue(videoRef, (snapshot) => {
                 const data = snapshot.val();
-                const filteredVideos = data 
-                    ? Object.values(data).filter(video => video.category === category)
+                const videos = data
+                    ? Object.values(data).filter((video) => video.category === category)
                     : [];
 
-                videoList.innerHTML = "";
-                if (filteredVideos.length === 0) {
-                    noVideosMessage.style.display = "block";
-                } else {
-                    noVideosMessage.style.display = "none";
-                    filteredVideos.forEach((video) => {
-                        const div = document.createElement("div");
-                        div.className = "video-item";
-                        div.innerHTML = `
-                            <div class="video-title-overlay">${video.title}</div>
-                            <iframe src="${video.url}" frameborder="0" allowfullscreen></iframe>
-                        `;
-                        videoList.appendChild(div);
-                    });
-                }
+                videoList.innerHTML = videos
+                    .map(
+                        (video) => `
+                            <div class="video-item">
+                                <h3>${video.title}</h3>
+                                <iframe src="${video.url}" frameborder="0" allowfullscreen></iframe>
+                            </div>
+                        `
+                    )
+                    .join("");
             });
         }
 
-        // Extract YouTube video ID
+        // Trích xuất ID video YouTube
         function extractYouTubeID(url) {
-            const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+            const regex = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/;
             const match = url.match(regex);
-            if (match && match[1]) {
-                return match[1];
-            } else {
-                alert("Link YouTube không hợp lệ. Vui lòng nhập lại!");
-                return null;
-            }
+            return match ? match[1] : null;
         }
 
-        // Initialize
+        // Khởi chạy
         updateCategoryList();
     </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Quản lý bài học YouTube</h1>
+        <div class="input-group">
+            <input type="text" id="videoTitle" placeholder="Tiêu đề video">
+            <input type="text" id="videoUrl" placeholder="Link YouTube">
+            <select id="videoCategory"></select>
+            <button onclick="addVideo()">Thêm Video</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="newCategory" placeholder="Thêm danh mục mới">
+            <button onclick="addCategory()">Thêm Danh Mục</button>
+        </div>
+        <div class="video-list" id="videoList"></div>
+    </div>
 </body>
 </html>
